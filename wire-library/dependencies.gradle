@@ -19,7 +19,7 @@ ext.versions = [
   'jimfs': '1.0',
   'animalSniffer': '1.16',
   'animalSnifferGradle': '1.5.0',
-  'mavenPublish': '0.8.0',
+  'mavenPublish': '0.13.0',
 ]
 
 ext.deps = [
