@@ -4,61 +4,39 @@ package com.squareup.wire.protos.kotlin
 
 import com.squareup.wire.FieldEncoding
 import com.squareup.wire.Message
+import com.squareup.wire.OneOf
+import com.squareup.wire.OneOfProtoAdapter
 import com.squareup.wire.ProtoAdapter
 import com.squareup.wire.ProtoReader
 import com.squareup.wire.ProtoWriter
 import com.squareup.wire.Syntax.PROTO_2
-import com.squareup.wire.WireField
-import com.squareup.wire.`internal`.countNonNull
-import com.squareup.wire.`internal`.sanitize
-import kotlin.Any
-import kotlin.AssertionError
-import kotlin.Boolean
-import kotlin.Deprecated
-import kotlin.DeprecationLevel
-import kotlin.Int
-import kotlin.Long
-import kotlin.Nothing
-import kotlin.String
-import kotlin.Unit
-import kotlin.hashCode
-import kotlin.jvm.JvmField
+import com.squareup.wire.internal.countNonNull
+import com.squareup.wire.internal.sanitize
+import com.squareup.wire.protos.kotlin.OneOfMessage.ChoiceOneOf.CHOICE_BAR
+import com.squareup.wire.protos.kotlin.OneOfMessage.ChoiceOneOf.CHOICE_BAZ
+import com.squareup.wire.protos.kotlin.OneOfMessage.ChoiceOneOf.CHOICE_FOO
 import okio.ByteString
+import kotlin.jvm.JvmField
 
 /**
  * It's a one of message.
  */
 public class OneOfMessage(
-  /**
-   * What foo.
-   */
-  @field:WireField(
-    tag = 1,
-    adapter = "com.squareup.wire.ProtoAdapter#INT32"
-  )
-  public val foo: Int? = null,
-  /**
-   * Such bar.
-   */
-  @field:WireField(
-    tag = 3,
-    adapter = "com.squareup.wire.ProtoAdapter#STRING"
-  )
-  public val bar: String? = null,
-  /**
-   * Nice baz.
-   */
-  @field:WireField(
-    tag = 4,
-    adapter = "com.squareup.wire.ProtoAdapter#STRING"
-  )
-  public val baz: String? = null,
+  choice: OneOf<Any>? = null,
   unknownFields: ByteString = ByteString.EMPTY
 ) : Message<OneOfMessage, Nothing>(ADAPTER, unknownFields) {
-  init {
-    require(countNonNull(foo, bar, baz) <= 1) {
-      "At most one of foo, bar, baz may be non-null"
+  val choice: OneOf<Any>? = run {
+    if (choice == null) return@run null
+    if (choice.key !in listOf(CHOICE_FOO,CHOICE_BAR,CHOICE_BAZ)) {
+      throw IllegalArgumentException("Key isn't in the expected scope something.")
     }
+    return@run choice
+  }
+
+  object ChoiceOneOf {
+    val CHOICE_FOO = OneOf.Key(tag = 1, adapter = ProtoAdapter.INT32, generatedName = "foo")
+    val CHOICE_BAR = OneOf.Key(tag = 3, adapter = ProtoAdapter.STRING, generatedName = "bar")
+    val CHOICE_BAZ = OneOf.Key(tag = 4, adapter = ProtoAdapter.STRING, generatedName = "baz")
   }
 
   @Deprecated(
@@ -71,9 +49,7 @@ public class OneOfMessage(
     if (other === this) return true
     if (other !is OneOfMessage) return false
     if (unknownFields != other.unknownFields) return false
-    if (foo != other.foo) return false
-    if (bar != other.bar) return false
-    if (baz != other.baz) return false
+    if (choice != other.choice) return false
     return true
   }
 
@@ -81,9 +57,7 @@ public class OneOfMessage(
     var result = super.hashCode
     if (result == 0) {
       result = unknownFields.hashCode()
-      result = result * 37 + foo.hashCode()
-      result = result * 37 + bar.hashCode()
-      result = result * 37 + baz.hashCode()
+      result = result * 37 + choice.hashCode()
       super.hashCode = result
     }
     return result
@@ -91,40 +65,37 @@ public class OneOfMessage(
 
   public override fun toString(): String {
     val result = mutableListOf<String>()
-    if (foo != null) result += """foo=$foo"""
-    if (bar != null) result += """bar=${sanitize(bar)}"""
-    if (baz != null) result += """baz=${sanitize(baz)}"""
+    // TODO(Benoit) Delegate to something.
+    if (choice != null) ProtoAdapter.ONE_OF.toString(choice)
     return result.joinToString(prefix = "OneOfMessage{", separator = ", ", postfix = "}")
   }
 
   public fun copy(
-    foo: Int? = this.foo,
-    bar: String? = this.bar,
-    baz: String? = this.baz,
+    choice: OneOf<Any>? = this.choice,
     unknownFields: ByteString = this.unknownFields
-  ): OneOfMessage = OneOfMessage(foo, bar, baz, unknownFields)
+  ): OneOfMessage = OneOfMessage(choice, unknownFields)
 
   public companion object {
     @JvmField
     public val ADAPTER: ProtoAdapter<OneOfMessage> = object : ProtoAdapter<OneOfMessage>(
-      FieldEncoding.LENGTH_DELIMITED, 
-      OneOfMessage::class, 
-      "type.googleapis.com/squareup.protos.kotlin.oneof.OneOfMessage", 
-      PROTO_2, 
+      FieldEncoding.LENGTH_DELIMITED,
+      OneOfMessage::class,
+      "type.googleapis.com/squareup.protos.kotlin.oneof.OneOfMessage",
+      PROTO_2,
       null
     ) {
       public override fun encodedSize(value: OneOfMessage): Int {
         var size = value.unknownFields.size
-        size += ProtoAdapter.INT32.encodedSizeWithTag(1, value.foo)
-        size += ProtoAdapter.STRING.encodedSizeWithTag(3, value.bar)
-        size += ProtoAdapter.STRING.encodedSizeWithTag(4, value.baz)
+        if (value.choice != null) {
+          size += ProtoAdapter.ONE_OF.encodedSizeWithTag(value.choice)
+        }
         return size
       }
 
       public override fun encode(writer: ProtoWriter, value: OneOfMessage): Unit {
-        ProtoAdapter.INT32.encodeWithTag(writer, 1, value.foo)
-        ProtoAdapter.STRING.encodeWithTag(writer, 3, value.bar)
-        ProtoAdapter.STRING.encodeWithTag(writer, 4, value.baz)
+        if (value.choice != null) {
+          ProtoAdapter.ONE_OF.encodeWithTag(writer, value.choice)
+        }
         writer.writeBytes(value.unknownFields)
       }
 
@@ -132,6 +103,7 @@ public class OneOfMessage(
         var foo: Int? = null
         var bar: String? = null
         var baz: String? = null
+        // TODO(Benoit) How would we delegate that without consuming the reader?
         val unknownFields = reader.forEachTag { tag ->
           when (tag) {
             1 -> foo = ProtoAdapter.INT32.decode(reader)
@@ -140,10 +112,17 @@ public class OneOfMessage(
             else -> reader.readUnknownField(tag)
           }
         }
+        require(countNonNull(foo, bar, baz) <= 1) {
+          "At most one of foo, bar, baz may be non-null"
+        }
+        val choice: OneOf<Any>? = when {
+          foo != null -> OneOf(ChoiceOneOf.CHOICE_FOO, foo!!) as OneOf<Any>
+          bar != null -> OneOf(ChoiceOneOf.CHOICE_BAR, bar!!) as OneOf<Any>
+          baz != null -> OneOf(ChoiceOneOf.CHOICE_BAZ, baz!!) as OneOf<Any>
+          else -> null
+        }
         return OneOfMessage(
-          foo = foo,
-          bar = bar,
-          baz = baz,
+          choice = choice,
           unknownFields = unknownFields
         )
       }

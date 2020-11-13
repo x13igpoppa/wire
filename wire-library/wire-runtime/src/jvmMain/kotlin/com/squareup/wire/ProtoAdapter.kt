@@ -265,6 +265,7 @@ actual abstract class ProtoAdapter<E> actual constructor(
     @JvmField actual val BOOL_VALUE: ProtoAdapter<Boolean?> = commonWrapper(BOOL, "type.googleapis.com/google.protobuf.BoolValue")
     @JvmField actual val STRING_VALUE: ProtoAdapter<String?> = commonWrapper(STRING, "type.googleapis.com/google.protobuf.StringValue")
     @JvmField actual val BYTES_VALUE: ProtoAdapter<ByteString?> = commonWrapper(BYTES, "type.googleapis.com/google.protobuf.BytesValue")
+    @JvmField actual val ONE_OF: OneOfProtoAdapter = commonOneOf()
     @JvmField actual val DURATION: ProtoAdapter<Duration> = try {
       commonDuration()
     } catch (_: NoClassDefFoundError) {

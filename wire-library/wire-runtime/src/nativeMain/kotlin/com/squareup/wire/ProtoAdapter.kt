@@ -181,5 +181,6 @@ actual abstract class ProtoAdapter<E> actual constructor(
     actual val BOOL_VALUE: ProtoAdapter<Boolean?> = commonWrapper(BOOL, "type.googleapis.com/google.protobuf.BoolValue")
     actual val STRING_VALUE: ProtoAdapter<String?> = commonWrapper(STRING, "type.googleapis.com/google.protobuf.StringValue")
     actual val BYTES_VALUE: ProtoAdapter<ByteString?> = commonWrapper(BYTES, "type.googleapis.com/google.protobuf.BytesValue")
+    actual val ONE_OF: OneOfProtoAdapter = commonOneOf()
   }
 }
